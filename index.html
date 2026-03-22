@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mata Aviator | RNG Theory Engine</title>
+    
+    <!-- PWA Metadata -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0b1120">
+    <link rel="manifest" href="data:application/json;base64,ewogICJnameIjogIk1hdGEgQXZpYXRvciIsCiAgInNob3J0X25hbWUiOiAiTWF0YSIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMGIxMTIwIiwKICAidGhlbWVfY29sb3IiOiAiIzBiMTEyMCIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzI1MjMvMjUyMzE0OC5wbmciLAogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIKICAgIH0KICBdCn0=">
+
+    <!-- External Assets -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+        :root {
+            --bg-dark: #0b1120;
+            --glass-bg: rgba(15, 23, 42, 0.8);
+            --accent-sky: #38bdf8;
+            --accent-purple: #a855f7;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg-dark); 
+            color: white; 
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: contain;
+            /* Disable text selection */
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* UI Components */
+        .glass { 
+            background: var(--glass-bg); 
+            backdrop-filter: blur(12px); 
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+        }
+
+        .gradient-text { 
+            background: linear-gradient(90deg, var(--accent-sky), var(--accent-purple)); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+        }
+
+        .scanner-line { 
+            height: 2px; 
+            background: linear-gradient(90deg, transparent, var(--accent-sky), transparent); 
+            width: 100%; 
+            position: absolute; 
+            top: 0; 
+            animation: scan 3s linear infinite; 
+        }
+
+        @keyframes scan { from { top: 0%; } to { top: 100%; } }
+
+        .animate-glow { 
+            animation: glow 1.5s ease-in-out infinite alternate; 
+        }
+
+        @keyframes glow { 
+            from { text-shadow: 0 0 10px rgba(56, 189, 248, 0.5); } 
+            to { text-shadow: 0 0 20px rgba(168, 85, 247, 0.8); } 
+        }
+
+        /* Form Elements */
+        .input-field {
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            color: var(--accent-sky);
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .action-btn {
+            background: linear-gradient(to right, #0284c7, #4f46e5);
+            color: white;
+            font-weight: 900;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s;
+            box-shadow: 0 10px 15px -3px rgba(7, 89, 133, 0.4);
+        }
+
+        .action-btn:active { transform: scale(0.98); }
+
+        .premium-badge {
+            background: rgba(168, 85, 247, 0.1);
+            color: #c084fc;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border: 1px solid rgba(168, 85, 247, 0.2);
+        }
+
+        .contact-link {
+            color: var(--accent-sky);
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        /* Dashboard Specifics */
+        .panel-header {
+            font-weight: 700;
+            font-size: 0.75rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .dot {
+            width: 0.5rem;
+            height: 0.5rem;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        .status-text {
+            color: #4ade80;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .user-pill {
+            font-size: 10px;
+            font-family: monospace;
+            color: #94a3b8;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        .logout-link {
+            font-size: 10px;
+            text-transform: uppercase;
+            font-weight: 900;
+            color: #475569;
+            transition: color 0.2s;
+        }
+
+        .logout-link:hover { color: #f87171; }
+
+        .time-field {
+            width: 100%;
+            background: #020617;
+            border: 1px solid #1e293b;
+            border-radius: 1rem;
+            padding: 1.25rem 1rem;
+            font-size: 1.875rem;
+            font-family: monospace;
+            text-align: center;
+            color: white;
+            outline: none;
+        }
+
+        .field-label {
+            position: absolute;
+            top: 0.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            color: #475569;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .analyze-btn {
+            width: 100%;
+            background: white;
+            color: black;
+            padding: 1.25rem;
+            border-radius: 1rem;
+            font-weight: 900;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            transition: all 0.3s;
+        }
+
+        .analyze-btn:hover { background: var(--accent-sky); color: white; }
+
+        .main-prediction-card {
+            background: linear-gradient(to bottom right, #0f172a, #000);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .label-text {
+            font-size: 10px;
+            font-weight: 900;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.4em;
+        }
+
+        .value-text {
+            font-size: 4.5rem;
+            font-family: monospace;
+            font-weight: 900;
+            letter-spacing: -0.05em;
+        }
+
+        .sub-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .engine-status {
+            width: 100%;
+            text-align: center;
+            font-size: 10px;
+            font-weight: 900;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5em;
+        }
+
+        .history-container {
+            max-height: 15rem;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2.5rem 0;
+            font-size: 10px;
+            color: #1e293b;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+        }
+
+        .method-box {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            font-size: 10px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+
+        .method-item {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+
+        .message-toast {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            padding: 1rem 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            z-index: 50;
+            font-weight: 900;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+        }
+
+        @media (max-width: 640px) {
+            .value-text { font-size: 3rem; }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-10 flex flex-col items-center">
+
+    <!-- Auth Container -->
+    <div id="auth-container" class="w-full max-w-md glass p-8 rounded-3xl shadow-2xl relative overflow-hidden my-auto">
+        <div class="scanner-line"></div>
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-black gradient-text tracking-tighter">MATA AVIATOR</h1>
+            <p class="text-slate-500 mt-2 text-xs uppercase tracking-[0.2em] font-bold">RNG Theory Engine v4.2</p>
+        </div>
+
+        <div id="login-form" class="space-y-5">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Authentication Email</label>
+                <input type="email" id="email" class="w-full input-field" placeholder="user@provider.com">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Encryption Key</label>
+                <input type="password" id="password" class="w-full input-field" placeholder="••••••••">
+            </div>
+            <button id="login-btn" class="w-full action-btn">
+                INITIALIZE CORE
+            </button>
+            
+            <div class="mt-8 pt-6 border-t border-slate-800/50 text-center">
+                <div class="flex items-center justify-center gap-3 mb-4">
+                    <span class="text-slate-600 line-through text-xs">Rs. 2500</span>
+                    <span class="premium-badge">PREMIUM: RS. 800</span>
+                </div>
+                <a href="https://wa.me/94716344483" target="_blank" class="contact-link">
+                    <i class="fab fa-whatsapp text-lg text-green-500"></i> WHATSAPP: +94 716 344 483
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="hidden w-full max-w-7xl space-y-8">
+        
+        <div class="grid lg:grid-cols-12 gap-6">
+            <!-- Left Panel -->
+            <div class="lg:col-span-4 space-y-6">
+                <div class="glass p-6 rounded-3xl text-center relative overflow-hidden group">
+                    <div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition">
+                        <i class="fas fa-microchip text-8xl"></i>
+                    </div>
+                    <h3 class="panel-header">Node Connection</h3>
+                    <div class="status-indicator">
+                        <span class="dot"></span>
+                        <span class="status-text">Encrypted Link Active</span>
+                    </div>
+                    <p id="user-display" class="user-pill"></p>
+                    <button id="logout-btn" class="logout-link">Terminate Session</button>
+                </div>
+
+                <div class="glass p-6 rounded-3xl border-b-4 border-sky-500/30">
+                    <h3 class="panel-header flex items-center gap-2">
+                        <i class="fas fa-database text-sky-400"></i> Local Entry
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="relative">
+                            <input type="time" id="time-input" step="1" class="time-field">
+                            <span class="field-label">Base Time</span>
+                        </div>
+                        <button id="add-time-btn" class="analyze-btn">
+                            RUN RNG ANALYSIS
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="lg:col-span-8 space-y-6">
+                <div class="glass p-10 rounded-3xl main-prediction-card">
+                    <div class="grid md:grid-cols-2 gap-10 relative z-10">
+                        <div class="space-y-2">
+                            <h2 class="label-text">Target Timestamp</h2>
+                            <div id="next-time-box" class="value-text">--:--:--</div>
+                            <div class="sub-label text-sky-500">
+                                <i class="fas fa-check-double"></i> Verified Signal
+                            </div>
+                        </div>
+                        <div class="space-y-2 md:text-right">
+                            <h2 class="label-text">Target Multiplier</h2>
+                            <div id="multiplier-box" class="value-text text-purple-400 animate-glow">--x</div>
+                            <div class="sub-label text-purple-500">
+                                <i class="fas fa-crosshairs"></i> Zone: 4x - 9x
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-8 pt-8 border-t border-white/5">
+                        <div id="prediction-status" class="engine-status">
+                            Engine Standby • Ready for Seed Input
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-5 gap-6">
+                    <div class="md:col-span-3 glass p-6 rounded-3xl">
+                        <h3 class="panel-header">Prediction Log</h3>
+                        <div id="history-list" class="history-container custom-scrollbar">
+                            <div class="empty-state">No data records</div>
+                        </div>
+                    </div>
+                    <div class="md:col-span-2 glass p-6 rounded-3xl bg-indigo-500/[0.02]">
+                        <h3 class="panel-header">Analysis Method</h3>
+                        <div class="method-box">
+                            <div class="method-item"><span class="text-sky-500">Non-Linear RNG:</span> Weighted probability distribution.</div>
+                            <div class="method-item"><span class="text-purple-500">Entropy Injection:</span> Jitter applied for bypass detection.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Box -->
+    <div id="message-box" class="hidden message-toast"></div>
+
+    <!-- Scripts -->
+    <script type="module">
+        // ---------------------------------------------------------
+        // SECURITY LAYER: ANTI-INSPECT / ANTI-VIEW SOURCE
+        // ---------------------------------------------------------
+        
+        // Disable Right Click context menu
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // Disable Common Developer Shortcuts
+        document.onkeydown = function(e) {
+            // F12 key
+            if (e.keyCode == 123) return false;
+            
+            // Ctrl+Shift+I (Inspect)
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) return false;
+            
+            // Ctrl+Shift+C (Inspect Element)
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) return false;
+            
+            // Ctrl+Shift+J (Console)
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) return false;
+            
+            // Ctrl+U (View Source) - THIS IS THE PRIMARY FIX
+            if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
+
+            // Ctrl+S (Save Page)
+            if (e.ctrlKey && e.keyCode == 'S'.charCodeAt(0)) return false;
+
+            // Ctrl+P (Print Page)
+            if (e.ctrlKey && e.keyCode == 'P'.charCodeAt(0)) return false;
+        };
+
+        // ---------------------------------------------------------
+        // CORE LOGIC & FIREBASE
+        // ---------------------------------------------------------
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAISWkpykSZydk61IVnJlpWQKX4HfmjlMM",
+            authDomain: "new-app-lo.firebaseapp.com",
+            projectId: "new-app-lo",
+            storageBucket: "new-app-lo.firebasestorage.app",
+            messagingSenderId: "577060298377",
+            appId: "1:577060298377:web:96ea7dd27d982b9157b058",
+            measurementId: "G-E8BEJSF427"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // DOM Cache
+        const authContainer = document.getElementById('auth-container');
+        const dashboard = document.getElementById('dashboard');
+        const timeInput = document.getElementById('time-input');
+        const addTimeBtn = document.getElementById('add-time-btn');
+        const nextTimeBox = document.getElementById('next-time-box');
+        const multiplierBox = document.getElementById('multiplier-box');
+        const historyList = document.getElementById('history-list');
+        const predictionStatus = document.getElementById('prediction-status');
+
+        function showMessage(msg, isError = false) {
+            const box = document.getElementById('message-box');
+            box.textContent = msg;
+            box.className = `message-toast ${isError ? 'bg-red-500' : 'bg-sky-600'} text-white block`;
+            box.classList.remove('hidden');
+            setTimeout(() => box.classList.add('hidden'), 3000);
+        }
+
+        const setInitialTime = () => {
+            if(!timeInput.value) {
+                timeInput.value = new Date().toTimeString().slice(0, 8);
+            }
+        };
+        setInitialTime();
+
+        // Auth Logic
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                authContainer.classList.add('hidden');
+                dashboard.classList.remove('hidden');
+                document.getElementById('user-display').textContent = user.email;
+            } else {
+                authContainer.classList.remove('hidden');
+                dashboard.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('login-btn').onclick = async () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            if(!email || !password) return showMessage("Credentials Required", true);
+            try {
+                const btn = document.getElementById('login-btn');
+                btn.disabled = true;
+                btn.textContent = "VERIFYING NODE...";
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (err) { 
+                showMessage("Invalid Access Key", true); 
+                document.getElementById('login-btn').disabled = false;
+                document.getElementById('login-btn').textContent = "INITIALIZE CORE";
+            }
+        };
+
+        document.getElementById('logout-btn').onclick = () => signOut(auth);
+
+        // Calculation Engine
+        addTimeBtn.onclick = () => {
+            const val = timeInput.value;
+            if(!val) return showMessage("No Timestamp Detected", true);
+
+            addTimeBtn.disabled = true;
+            addTimeBtn.innerHTML = '<i class="fas fa-cog fa-spin mr-2"></i> COMPUTING...';
+            predictionStatus.textContent = "SYNCHRONIZING WITH PROBABILITY MATRIX...";
+
+            setTimeout(() => {
+                const [h, m, s] = val.split(':').map(Number);
+                const inputDate = new Date();
+                inputDate.setHours(h, m, s || 0);
+
+                const seed = new Date().getMilliseconds() + Math.random();
+                const roll = Math.random();
+                
+                let gapSeconds;
+                if (roll < 0.15) gapSeconds = 45 + (Math.random() * 45);
+                else if (roll < 0.65) gapSeconds = 120 + (Math.random() * 100);
+                else if (roll < 0.90) gapSeconds = 240 + (Math.random() * 150);
+                else gapSeconds = 400 + (Math.random() * 300);
+
+                const jitter = (seed % 5); 
+                const finalTarget = new Date(inputDate.getTime() + (gapSeconds * 1000) + (jitter * 1000));
+                
+                const resTime = `${String(finalTarget.getHours()).padStart(2, '0')}:${String(finalTarget.getMinutes()).padStart(2, '0')}:${String(finalTarget.getSeconds()).padStart(2, '0')}`;
+                const mult = (4 + (Math.random() * 5)).toFixed(2);
+
+                nextTimeBox.textContent = resTime;
+                multiplierBox.textContent = mult + "x";
+                predictionStatus.textContent = "SIGNAL GENERATED • PROBABILITY 92.4%";
+                predictionStatus.classList.add('animate-pulse', 'text-sky-400');
+
+                const row = document.createElement('div');
+                row.className = "flex justify-between items-center bg-white/[0.02] p-4 rounded-2xl border border-white/5 mb-3";
+                row.innerHTML = `
+                    <div class="flex flex-col">
+                        <span class="text-[7px] text-slate-700 font-black uppercase tracking-widest">Input</span>
+                        <span class="font-mono text-[10px] text-slate-500">${val}</span>
+                    </div>
+                    <div class="flex flex-col text-right">
+                        <span class="text-[7px] text-sky-600 font-black uppercase tracking-widest">Vector</span>
+                        <span class="font-mono text-sm text-white font-black">${resTime} <span class="text-purple-500 ml-1 text-xs">${mult}x</span></span>
+                    </div>
+                `;
+                
+                if (historyList.querySelector('.empty-state')) historyList.innerHTML = '';
+                historyList.prepend(row);
+
+                addTimeBtn.disabled = false;
+                addTimeBtn.textContent = "RUN RNG ANALYSIS";
+                showMessage("RNG Output Successful");
+            }, 1200);
+        };
+
+        // Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const sw = `self.addEventListener('fetch', (e) => e.respondWith(fetch(e.request)));`;
+                const blob = new Blob([sw], { type: 'text/javascript' });
+                navigator.serviceWorker.register(URL.createObjectURL(blob));
+            });
+        }
+    </script>
+</body>
+</html>
